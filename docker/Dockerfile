@@ -45,6 +45,8 @@ RUN apt-get update && \
 
 # 7. 环境配置
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
+RUN echo "source /mine_ws/install/setup.bash" >> /root/.bashrc
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
 
 # 优化 GUI 变量
 ENV QT_X11_NO_MITSHM=1

@@ -4,21 +4,21 @@ services:
   ros_mine:
     # 1. 构建与镜像
     build: 
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/Dockerfile
     image: mine_project_image:latest
     container_name: mine_project_container
 
     # 2. 核心：代码实时同步与持久化
     volumes:
       # 【核心代码】将宿主机当前目录映射到容器工作空间
-      - .:/mine_ws
+      - ..:/mine_ws
       
       # 【编译加速】防止容器内 build 文件夹与宿主机发生权限冲突
       # 同时也方便你在宿主机直接通过 VS Code 查看编译生成的头文件
-      - ./build:/mine_ws/build
-      - ./install:/mine_ws/install
-      - ./log:/mine_ws/log
+      # - ../build:/mine_ws/build
+      # - ../install:/mine_ws/install
+      # - ../log:/mine_ws/log
 
       # 【可选】如果你有自定义的缓存或配置文件
       # - ~/.bashrc:/root/.bashrc:ro
