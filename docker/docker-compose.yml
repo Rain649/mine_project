@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  ros_mine:
+    # 1. 构建与镜像
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: mine_project_image:latest
+    container_name: mine_project_container
+
+    # 2. 核心：代码实时同步与持久化
+    volumes:
+      # 【核心代码】将宿主机当前目录映射到容器工作空间
+      - .:/mine_ws
+      
+      # 【编译加速】防止容器内 build 文件夹与宿主机发生权限冲突
+      # 同时也方便你在宿主机直接通过 VS Code 查看编译生成的头文件
+      - ./build:/mine_ws/build
+      - ./install:/mine_ws/install
+      - ./log:/mine_ws/log
+
+      # 【可选】如果你有自定义的缓存或配置文件
+      # - ~/.bashrc:/root/.bashrc:ro
+
+    # 3. 网络与通信：这是 ROS 2 稳定运行的关键
+    network_mode: "host"
+    ipc: "host"
+    # 增加特权，方便访问宿主机的 USB 设备（如雷达、摄像头）
+    privileged: true
+
+    # 4. 交互设置
+    tty: true
+    stdin_open: true
+    restart: always
+
+    # 5. 环境变量
+    environment:
+      - ROS_DOMAIN_ID=30
+      # 自动 source 环境变量，省去每次进入容器手动 source 的麻烦
+      - "PYTHONUNBUFFERED=1"
+      # 设置日志配色，方便调试
+      - "RCUTILS_COLORIZED_OUTPUT=1"
+
+    # 6. 工作目录
+    working_dir: /mine_ws
