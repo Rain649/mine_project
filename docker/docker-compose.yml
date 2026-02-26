@@ -1,44 +1,109 @@
-version: '3.8'
-
 services:
+
   ros_mine:
-    # 1️⃣ 构建镜像
-    build: 
+
+    # =============================
+    # 1. 构建 Docker 镜像
+    # =============================
+    build:
+
+      # build context 是项目根目录
+      # Docker 可以访问 src 文件夹
       context: ..
+
+      # Dockerfile 路径
       dockerfile: docker/Dockerfile
+
+
+    # 镜像名称
     image: mine_project_image:latest
+
+
+    # 容器名称
     container_name: mine_ws_container
 
-    # 2️⃣ 代码同步和持久化
+
+    # =============================
+    # 2. 挂载 src（本地开发用）
+    # =============================
     volumes:
-      # 只同步 src 文件夹，避免覆盖 build/install
+
+      # 把本地 src 挂载进容器
+      #
+      # 本地开发：
+      #    修改代码立即生效
+      #
+      # AWS：
+      #    不使用 volumes
+      #
       - ../src:/mine_ws/src
 
-    # 3️⃣ 网络与通信
-    network_mode: "host"   # 只在 Linux 可用
-    ipc: "host"
-    privileged: true       # 如果需要访问 USB 设备
 
-    # 4️⃣ 容器交互
-    tty: true
-    stdin_open: true
-    restart: unless-stopped
 
-    # 5️⃣ 环境变量
+    # =============================
+    # 3. 使用主机网络
+    # =============================
+    network_mode: host
     environment:
       - ROS_DOMAIN_ID=30
-      - PYTHONUNBUFFERED=1
-      - RCUTILS_COLORIZED_OUTPUT=1
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+    # ROS2 DDS 通信必须
+    ipc: host
 
-    # 6️⃣ 工作目录
+
+
+    # =============================
+    # 4. 允许交互
+    # =============================
+    tty: true
+
+    stdin_open: true
+
+
+
+    # =============================
+    # 5. 工作目录
+    # =============================
     working_dir: /mine_ws
 
-  # 替换原 entrypoint
+
+
+    # =============================
+    # 6. 容器启动时执行的命令
+    # =============================
     command: >
-      /bin/bash -c "
+
+      bash -c "
+
+        # Step 1
+        # 加载 ROS2 环境
+        # 否则 colcon / ros2 无法使用
+
         source /opt/ros/humble/setup.bash &&
+
+
+
+        # Step 2
+
         colcon build --symlink-install &&
-        source install/setup.bash &&
-        exec ros2 run cpp_test talker
+
+
+
+        # Step 3
+        # 加载你自己的 workspace
+
+        source /mine_ws/install/setup.bash &&
+
+
+
+        # Step 4
+        # 运行 ROS2 节点
+
+        echo '==== Starting talker ====' &&
+
+        ros2 run cpp_test talker
+
+        # 防止容器退出
+        exec bash
+
       "
-    

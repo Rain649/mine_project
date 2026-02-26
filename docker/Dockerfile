@@ -1,38 +1,56 @@
+# 使用 ROS2 Humble 官方桌面版镜像作为基础
+# 已经包含：
+# - ROS2
+# - rviz2
+# - colcon
+# - 常用GUI库
 FROM osrf/ros:humble-desktop
 
+
+# 防止 apt 安装时出现交互界面卡住
 ENV DEBIAN_FRONTEND=noninteractive
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+
+
+# 定义 ROS2 工作空间路径变量
+# 后面统一使用，方便修改
 ENV WS=/mine_ws
+ENV ROS_DOMAIN_ID=
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 
-# 基础工具安装
-RUN sed -i 's/archive.ubuntu.com/mirrors.huaweicloud.com/g' /etc/apt/sources.list && \
-    apt-get update && apt-get install -y \
-    ros-humble-foxglove-bridge \
-    build-essential \
-    cmake \
-    python3-pip \
-    python3-colcon-common-extensions \
-    git \
-    nano \
-    && rm -rf /var/lib/apt/lists/*
-
-# rosdepc 安装
-RUN pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple rosdepc && \
-    rosdepc init && rosdepc update
-
-# 创建 workspace
-RUN mkdir -p $WS/src
+# 设置容器内工作目录
+# 后续所有操作默认在这个目录执行
 WORKDIR $WS
 
-# 拷贝 src 前先安装依赖
-# COPY ./src/package.xml ./src/
-# RUN rosdepc install --from-paths src --ignore-src -y --rosdistro humble
-COPY ./src ./src
+
+# 安装 colcon 和基础工具
+# colcon 是 ROS2 编译工具，必须安装
+RUN apt-get update && apt-get install -y \
+    python3-colcon-common-extensions \
+    python3-pip \
+    git \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-std-msgs \
+    && rm -rf /var/lib/apt/lists/*
+
+
+# 把本地 src 文件夹复制进镜像
+# 作用：
+#
+# 云端 AWS：
+#    没有 volumes
+#    使用这里的 src
+#
+# 本地开发：
+#    会被 volumes 覆盖
+#
+COPY src $WS/src
+
+
+# 设置 bash 自动加载 ROS2 环境
+# 否则 ros2 命令无法使用
 RUN echo "source /opt/ros/humble/setup.bash" >> /root/.bashrc
+RUN echo "source /mine_ws/install/setup.bash" >> /root/.bashrc
 
-# 环境变量
-ENV QT_X11_NO_MITSHM=1
-
-# 容器启动直接运行 talker
+# 默认启动 bash
+# 实际运行逻辑由 docker-compose command 覆盖
 CMD ["/bin/bash"]
