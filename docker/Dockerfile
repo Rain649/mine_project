@@ -53,4 +53,6 @@ RUN echo "source /mine_ws/install/setup.bash" >> /root/.bashrc
 
 # 默认启动 bash
 # 实际运行逻辑由 docker-compose command 覆盖
-CMD ["/bin/bash"]
+# CMD ["/bin/bash"]
+
+CMD ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && source /mine_ws/install/setup.bash && ros2 run cpp_test talker"]
