@@ -45,6 +45,14 @@ RUN apt-get update && apt-get install -y \
 #
 COPY src $WS/src
 
+# 安装依赖（可选，根据 package.xml）
+RUN . /opt/ros/humble/setup.bash && \
+    apt-get update && apt-get install -y python3-colcon-common-extensions && \
+    rm -rf /var/lib/apt/lists/*
+
+# 编译工作空间
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build"
+
 
 # 设置 bash 自动加载 ROS2 环境
 # 否则 ros2 命令无法使用
